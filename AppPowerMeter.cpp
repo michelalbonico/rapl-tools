@@ -6,6 +6,7 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 #include "Rapl.h"
 
@@ -14,6 +15,9 @@ int main(int argc, char *argv[]) {
 	Rapl *rapl = new Rapl();
 	int ms_pause = 100;       // sample every 100ms
 	std::ofstream outfile ("rapl.csv", std::ios::out | std::ios::trunc);
+
+	// CSV Header
+	outfile << "timestamp, pkg, pp0, pp1, dram, total_time" << std::endl;
 
 	pid_t child_pid = fork();
 	if (child_pid >= 0) { //fork successful
@@ -33,9 +37,16 @@ int main(int argc, char *argv[]) {
 				
 				usleep(ms_pause * 1000);
 
+				// Getting timestamp
+				auto startingTime = std::chrono::system_clock::now();
+				auto durationSinceEpoch = startingTime.time_since_epoch();
+				auto seconds = std::chrono::duration_cast<std::chrono::seconds>(durationSinceEpoch);
+
 				// rapl sample
 				rapl->sample();
-				outfile << rapl->pkg_current_power() << ","
+
+				outfile << seconds.count() << ","
+					<< rapl->pkg_current_power() << ","
 					<< rapl->pp0_current_power() << ","
 					<< rapl->pp1_current_power() << ","
 					<< rapl->dram_current_power() << ","
